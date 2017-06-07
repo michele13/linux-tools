@@ -102,8 +102,7 @@ if [ ! -e $TOP/stage/gcc1.done ]; then
 if [ -e $TOP/tmp/build-gcc ]; then rm -rf $TOP/tmp/build-gcc; fi
 mkdir -p $TOP/tmp/build-gcc
 cd $TOP/tmp/build-gcc
-if [ ! -e $TOP/stage/gcc1.configure ]; then $SRC/gcc/configure --host=${HOST} --build=${HOST} --target=${TRIPLE} --prefix=${PREFIX} --disable-nls --disable-shared --disable-multilib --with-newlib --disable-headers --disable-libmudflap --disable-libgomp --disable-decimal-float --disable-libquadmath --disable-threads --disable-libssp --disable-libatomic --disable-libstdcxx --disable-libsanitizer  --enable-languages=c,c++; fi #--with-float=soft --with-arch=${ARM_ARCH}
-touch $TOP/stage/gcc1.configure
+if [ ! -e $TOP/stage/gcc1.configure ]; then $SRC/gcc/configure --host=${HOST} --build=${HOST} --target=${TRIPLE} --prefix=${PREFIX} --disable-nls --disable-shared --disable-multilib --with-newlib --disable-headers --disable-libmudflap --disable-libgomp --disable-decimal-float --disable-libquadmath --disable-threads --disable-libssp --disable-libatomic --disable-libstdcxx --disable-libsanitizer  --enable-languages=c,c++; touch $TOP/stage/gcc1.configure; fi #--with-float=soft --with-arch=${ARM_ARCH}
 if [ ! -e $TOP/stage/gcc1.build ]; then make all-gcc all-target-libgcc; touch $TOP/stage/gcc1.build ; fi
 make install-gcc install-target-libgcc
 touch $TOP/stage/gcc1.done
