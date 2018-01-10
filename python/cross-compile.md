@@ -23,8 +23,8 @@ index 716f08e..ca8b141 100644
 
 +        # Insert libraries and headers from embedded root file system (RFS)
 +        if 'RFS' in os.environ:
-+            lib_dirs += [os.environ['RFS'] + '/usr/lib']
-+            inc_dirs += [os.environ['RFS'] + '/usr/include']
++            lib_dirs += [os.environ['RFS'] + '/lib']
++            inc_dirs += [os.environ['RFS'] + '/include']
 +
          # XXX Omitted modules: gl, pure, dl, SGI-specific modules
 
