@@ -1,0 +1,23 @@
+= README =
+
+This program is a shell script created to avoid the use of hardlinks.
+It may be useful on systems which do not allow hardlinks such as Android.
+
+== Installation ==
+
+edit the script and change the "LN=" so that it points to the *real* ln program.
+
+Example 1: Install the command inside the  home directory.
+
+1. Copy the script to your personal bin directory. Eg ~/bin
+2. Edit the script and change the value of the LN variable to /bin/ln
+
+Example 2: Replace the ln command with the script
+
+In this scenario we replace the ln command with the script. 
+This may cause problems
+
+1. Move /bin/ln to /bin/ln.real
+2. Edit the script andchange the value of the LN variable to /bin/ln.real
+
+You may wish to do the same procedure with the *link* command
