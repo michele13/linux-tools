@@ -1,0 +1,5 @@
+HOW TO USE
+
+1) Extract binutils-x.xx.tar archive
+2) Rename binutils-x.xx folder to binutils
+3) run "./sbu-test.sh $N" to run the test with $N jobs at a time (default is infinite)
