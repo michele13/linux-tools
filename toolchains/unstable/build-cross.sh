@@ -49,4 +49,6 @@ make install
 # LibstdC++
 mkdir -p $OBJ/build-libstdcxx
 cd $OBJ/build-libstdcxx
-# $SRC/gcc/libstdc++v3/configure --host=$TARGET --prefix=$OUT --disable-nls --disable-shared --disable-multilib --disable-libstdcxx-threads --disable-libstdcxx-pch --with-gxx-include-dir=$OUT/$TARGET/include/c++ 
+$SRC/gcc/libstdc++v3/configure --host=$TARGET --prefix=$OUT/$TARGET --disable-nls --disable-shared --disable-multilib --disable-libstdcxx-threads --disable-libstdcxx-pch
+make
+make install
