@@ -15,7 +15,13 @@ case "$1" in
 	  ;;
 	
 	extract)
-	  tar xf $REPO/$2*.tar.*
+	  shift
+	for file in "$@"; do
+	  for pkg in $(find $REPO -iname "$file*.tar.*" -print); do
+	    #tar xf $REPO/$file*.tar.*
+	    tar xf $pkg
+	  done
+	done
 	  ;;
 	*) echo "Usage: $0 {search|extract} package-version (ex. gcc-8.1.0)"
 	exit 1
