@@ -1,4 +1,5 @@
 # Prerequisites and Directory Setup
+*Source: https://www.github.com/AgentD/diy-linux-guide*
 
 This section deals with the packages we need on our system to cross bootstrap
 our mini distro, as well as the basic directory setup before we get started.
