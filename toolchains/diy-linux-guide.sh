@@ -1,7 +1,9 @@
 #!/bin/sh
 set -eux
 
-# Environment Variables
+# --- ENVIRONMENT VARIABLES --- #
+
+# Main Environment Variables
 BUILDROOT=$(pwd)
 TCDIR="$BUILDROOT/toolchain"
 SYSROOT="$TCDIR/sysroot"
@@ -9,33 +11,41 @@ SOURCES="$BUILDROOT/sources"
 STAGE="$BUILDROOT/build/stage"
 export PATH="$TCDIR/bin:$PATH"
 
+# Environment Variables for toolchain build
+HOST="$(uname -m)-linux-gnu"
+TARGET="$(uname -m)-lfs-linux-gnu"
+LINUX_ARCH=x86
+
 # Compiler flags
 export CFLAGS="-Os -g0"
 export CXXFLAGS="-Os -g0"
 export LDFLAGS="-s"
 
-# Functions
+# --- FUNCTIONS --- #
 
-stage() (
-touch $STAGE
-grep $1
-echo $?
-)
-
+# This function extract a source tarball into an empty directory
+# thanks to this we don't need to know the extension of the tarball
+# or the version of the program
 extract_sources() (
 mkdir -p $BUILDROOT/sources/$1
 tar xf $BUILDROOT/sources/$1*.tar.* -C $BUILDROOT/sources/$1/
 )
 
+# This function will print the path where the sources of a package are
+# located. Usually they are unpacked into a subdirectory that has the name of
+# the package (eg $BUILDROOT/binutils/binutils-2.34)
 findsrc() (
 ls -d $BUILDROOT/sources/$1/*
 )
 
-# Build Directory Structure
+# --- THE SCRIPTS BEGINS HERE --- #
 
+
+# Remove previous build directory and create directory structure if not present
 rm -rf "build"
 mkdir -p "$TCDIR/bin" "build" "$SOURCES" "$SYSROOT"
 
+# Downloading sources
 wget -c -P "$BUILDROOT/sources" http://www.linuxfromscratch.org/lfs/downloads/stable/wget-list
 wget -c -P "$BUILDROOT/sources" -i "$BUILDROOT/sources/wget-list"
 wget -c -P "$BUILDROOT/sources" https://musl.libc.org/releases/musl-1.2.2.tar.gz
@@ -52,11 +62,6 @@ mkdir -p "$SYSROOT/usr/share" "$SYSROOT/usr/include"
 
 # Build Cross Compiler
 
-# Environment Variables for toolchain build
-HOST="$(uname -m)-linux-gnu"
-TARGET="$(uname -m)-lfs-linux-gnu"
-LINUX_ARCH=x86
-
 echo "1. Kernel Headers"
 extract_sources linux
 export KBUILD_OUTPUT="$BUILDROOT/build/linux/"
@@ -64,9 +69,7 @@ mkdir -p "$KBUILD_OUTPUT"
 cd `findsrc linux`
 make O="$KBUILD_OUTPUT" ARCH="$LINUX_ARCH" headers_check
 make O="$KBUILD_OUTPUT" ARCH="$LINUX_ARCH" INSTALL_HDR_PATH="$SYSROOT/usr" headers_install
-
 cd "$BUILDROOT"
-
 
 echo "2. cross-binutils"
 extract_sources binutils
@@ -79,7 +82,6 @@ make configure-host
 make -j$(nproc)
 make install
 cd $BUILDROOT
-
 
 echo "3. cross-gcc (compiler)"
 extract_sources gcc
@@ -98,7 +100,6 @@ $srcdir/configure --prefix="$TCDIR" --target="$TARGET" --build="$HOST" --host="$
 make -j$(nproc) all-gcc
 make install-gcc
 cd $BUILDROOT
-
 
 echo "4. GLibc Headers and Startup files"
 extract_sources glibc
@@ -129,14 +130,16 @@ cd $BUILDROOT/build/glibc
 make -j$(nproc)
 make DESTDIR=$SYSROOT install
 
-
-#echo "7. cross-gcc (libgcc-shared)"
-#cd $BUILDROOT/build/gcc
-#make -j$(nproc) enable_shared=yes all-target-libgcc
-#make install-target-libgcc
-#
-echo "8. cross-gcc (all)"
+echo "7. cross-gcc (all)"
 cd $BUILDROOT/build/gcc
 make -j$(nproc)
 make install
+
+# When we built GCC it has installed a partial version of `limits.h` internal header
+# with the following commands we are going to install the full internal header
+srcdir="$(findsrc gcc)"
+cat $srcdir/gcc/limitx.h $srcdir/glimits.h gcc/limity.h >
+  `dirname $($TARGET-gcc -print-libgcc-file-name)`/install-tools/include/limits.h
+gcc_ver=`$TARGET-gcc -v 2>&1 | tail -n1 | cut -d" " -f3`
+$TCDIR/libexec/gcc/$TARGET/$gcc_ver/install-tools/mkheaders
 
