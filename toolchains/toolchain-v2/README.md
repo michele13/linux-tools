@@ -39,7 +39,7 @@ you can run an **offline** build using this command:
     ./[script-name].sh
 
 
-or
+you can also run the command this way:
 
     OFFLINE=1 ./[script-name].sh
 
@@ -51,7 +51,7 @@ This file, if exists, is loaded by the main script and allows you see what was t
 It also allows you to ***repeat*** or ***skip*** certain steps.
 an `env` file is automatically created when a step is completed without errors.
 
-The folowing is sample `env` file produced by a complete build:
+The folowing is a sample `env` file produced by a complete build:
 
 ```
 OFFLINE=1
