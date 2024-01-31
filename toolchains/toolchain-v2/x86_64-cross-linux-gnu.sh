@@ -15,17 +15,29 @@ linux_ver=6.4.12
 
 cd $(dirname $0) ; CWD=$(pwd); SRC=$CWD/sources; WORK=$CWD/work/$TARGET
 
-INSTALL_DIR=$CWD/cross
-TARGET=x86_64-cross-linux-gnu
-
 # Linux ARCH
 LARCH=x86_64
+TARGET=x86_64-cross-linux-gnu
+INSTALL_DIR=$CWD/cross
+JOBS=$(nproc)
+
 
 # Extra configure parameters
 # to pass when building GCC. By default is empty
 GCC_CONFIGURE_EXTRA=""
 # Configure parameters that will be added to every build
 COMMON_CONFIG=""
+
+# Optimization - static compile
+CC="gcc -static --static"
+CXX="g++ -static --static"
+export CC CXX
+
+# Disable Optimization (uncomment to enable)
+#CFLAGS="-Os -g0"
+#CXXFLAGS="-Os -g0"
+#LDDFLAGS="-s"
+#export CFLAGS CXXFLAGS LDFLAGS
 
 # Download Tarballs
 
@@ -64,8 +76,8 @@ ln -sf . $INSTALL_DIR/$TARGET/usr || true
 mkdir -p build-binutils
 cd build-binutils
 
-$SRC/binutils-$binutils_ver/configure --prefix=$INSTALL_DIR --with-sysroot --target=$TARGET --disable-multilib --disable-nls --disable-werror $COMMON_CONFIG
-make -j$(nproc)
+$SRC/binutils-$binutils_ver/configure --prefix=$INSTALL_DIR --with-sysroot --target=$TARGET --disable-multilib --disable-nls --enable-gprofng=no --disable-werror $COMMON_CONFIG
+make -j$JOBS
 make install-strip 
 
 # Build Linux Kernel Headers
@@ -89,33 +101,36 @@ mkdir -p build-gcc
 cd build-gcc
 # Disable libsanitizer is necessary to build GCC without libcrypt installed
 $SRC/gcc-$gcc_ver/configure --prefix=$INSTALL_DIR --target=$TARGET --enable-languages=c,c++ --disable-nls --disable-multilib --disable-libsanitizer $COMMON_CONFIG $GCC_CONFIGURE_EXTRA
-make -j$(nproc) all-gcc
+make -j$JOBS all-gcc
 make install-strip-gcc
 
 # Build GLIBC headers and startup files
 cd ../
 mkdir -p build-glibc
 cd build-glibc
-$SRC/glibc-$glibc_ver/configure --prefix=$INSTALL_DIR/$TARGET --host=$TARGET --with-headers=$INSTALL_DIR/$TARGET/include --disable-multilib --disable-nls $COMMON_CONFIG
-make -j$(nrpoc) install-bootstrap-headers=yes install-headers
-make -j$(nproc) csu/subdir_lib
+$SRC/glibc-$glibc_ver/configure --prefix=$INSTALL_DIR/$TARGET --host=$TARGET --with-headers=$INSTALL_DIR/$TARGET/include --disable-multilib --disable-nls --disable-werror $COMMON_CONFIG
+make -j$JOBS install-bootstrap-headers=yes install-headers
+make -j$JOBS csu/subdir_lib
 install csu/crt1.o csu/crti.o csu/crtn.o $INSTALL_DIR/$TARGET/lib
 $TARGET-gcc -nostdlib -nostartfiles -shared  -x c /dev/null -o $INSTALL_DIR/$TARGET/lib/libc.so
 touch $INSTALL_DIR/$TARGET/include/gnu/stubs.h
 
 # Build libgcc
 cd ../build-gcc
-make -j$(nproc) all-target-libgcc
+make -j$JOBS all-target-libgcc
 make install-strip-target-libgcc
 
 # Finish building glibc
 cd ../build-glibc
-make -j$(nproc)
+
+# We use normal values for CC and CXX
+# to avoid failures in the build of the C Library
+make -j$JOBS CC=gcc CXX=g++
 make install
 
 # Finish building GCC
 cd ../build-gcc
-make -j$(nproc)
+make -j$JOBS
 make install-strip
 
 echo  -e "\n FINISHED SUCCESSFULLY"
