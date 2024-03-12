@@ -21,6 +21,7 @@ TARGET=x86_64-cross-linux-gnu
 INSTALL_DIR=$CWD/cross/$TARGET
 WORK=$CWD/work/$TARGET
 JOBS=$(nproc)
+#JOBS=1
 
 # CPU ARCH
 #XARCH="armv8-a"
@@ -101,9 +102,9 @@ cd build-binutils
 if [ $BINUTILS == "0" ]; then
 unset BINUTILS
 
-$SRC/binutils-$binutils_ver/configure --prefix=$INSTALL_DIR --with-sysroot --target=$TARGET --disable-multilib --disable-nls --enable-gprofng=no --enable-default-hash-style=gnu --disable-werror $COMMON_CONFIG
+$SRC/binutils-$binutils_ver/configure --with-sysroot=/$TARGET --prefix= --target=$TARGET --disable-multilib --disable-nls --enable-gprofng=no --enable-default-hash-style=gnu --disable-werror $COMMON_CONFIG
 make -j$JOBS
-make install-strip
+make install-strip DESTDIR=$INSTALL_DIR
 echo "BINUTILS=1" >> $CWD/env
 fi 
 
@@ -141,9 +142,9 @@ if [ $GCC_CORE == "0" ]; then
 unset GCC_CORE
 
 # Disable libsanitizer is necessary to build GCC without libcrypt installed
-$SRC/gcc-$gcc_ver/configure --prefix=$INSTALL_DIR --target=$TARGET --enable-languages=c,c++ --disable-nls --disable-multilib --disable-libsanitizer $COMMON_CONFIG $GCC_CONFIGURE_EXTRA
+$SRC/gcc-$gcc_ver/configure --prefix= --target=$TARGET --enable-languages=c,c++ --disable-nls --disable-multilib --with-build-sysroot=$INSTALL_DIR/$TARGET --with-sysroot=/$TARGET --disable-libsanitizer --disable-nls $COMMON_CONFIG $GCC_CONFIGURE_EXTRA
 make -j$JOBS all-gcc
-make install-strip-gcc
+make install-strip-gcc DESTDIR=$INSTALL_DIR
 echo "GCC_CORE=1" >> $CWD/env
 fi
 
@@ -158,8 +159,8 @@ cd build-glibc
 if [ $LIBC_HEADERS == "0" ]; then
 unset LIBC_HEADERS
 
-COMMON_CONFIG="" $SRC/glibc-$glibc_ver/configure --prefix=$INSTALL_DIR/$TARGET --host=$TARGET --with-headers=$INSTALL_DIR/$TARGET/include --disable-multilib --disable-nls --disable-werror $GLIBC_CONFIGURE_EXTRA $COMMON_CONFIG
-make -j$JOBS install-bootstrap-headers=yes install-headers
+COMMON_CONFIG="" $SRC/glibc-$glibc_ver/configure --prefix=/usr --host=$TARGET --with-headers=$INSTALL_DIR/$TARGET/include --disable-multilib --disable-nls --disable-werror $GLIBC_CONFIGURE_EXTRA $COMMON_CONFIG
+make -j$JOBS DESTDIR=$INSTALL_DIR/$TARGET install-bootstrap-headers=yes install-headers 
 echo "LIBC_HEADERS=1" >> $CWD/env
 fi
 
@@ -185,7 +186,7 @@ if [ $LIBGCC == "0" ]; then
 unset LIBGCC
 
 make -j$JOBS all-target-libgcc
-make install-strip-target-libgcc
+make install-strip-target-libgcc DESTDIR=$INSTALL_DIR
 echo "LIBGCC=1" >> $CWD/env
 fi
 
@@ -198,7 +199,7 @@ cd ../build-glibc
 if [ $GLIBC == "0" ]; then
 unset GLIBC
 make -j$JOBS CC=gcc CXX=g++
-make install
+make install DESTDIR=$INSTALL_DIR/$TARGET
 echo "GLIBC=1" >> $CWD/env
 fi
 
@@ -211,7 +212,7 @@ if [ $GCC == "0" ]; then
 unset GCC
 
 make -j$JOBS
-make install-strip
+make install-strip DESTDIR=$INSTALL_DIR
 cat $SRC/gcc-$gcc_ver/gcc/limitx.h $SRC/gcc-$gcc_ver/gcc/glimits.h $SRC/gcc-$gcc_ver/gcc/limity.h > \
   $INSTALL_DIR/lib/gcc/$TARGET/$gcc_ver/include/limits.h
 echo "GCC=1" >> $CWD/env
