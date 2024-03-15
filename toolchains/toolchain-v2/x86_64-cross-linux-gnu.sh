@@ -1,7 +1,11 @@
-#!/bin/sh -e
+#!/bin/sh
 
 # Copyright (c) 2024, Michele Bucca
 # Distributed under the terms of the ISC License
+
+# Exit on error. We moved it here so it works
+# even if the she script is called using a command like "sh -x scrpitname.sh"
+set -e
 
 # Versions
 binutils_ver=2.41
