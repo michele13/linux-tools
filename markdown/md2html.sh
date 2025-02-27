@@ -24,6 +24,24 @@ get_title(){
   echo $t
 }
 
+# Paragraphs <p></p> 
+check_paragraph() {
+  local ret=0
+  echo $line | grep -q -E "^$" || ret=1
+  if [ "$ret" = "0" ]; then
+    paragraph_toggle
+  fi
+}
+
+paragraph_toggle() {
+  if [ "$p_open" = "n" ]; then
+      echo "<p>" >> $OUTPUT
+      p_open="y"
+    else
+      echo "</p>" >> $OUTPUT
+      p_open="n"
+  fi
+}
 
 # We output h1, h2, ..., to h5
 html_header() {
@@ -35,6 +53,9 @@ html_header() {
   local t=$line
   t=$(echo $t | sed -E 's/(#)+ //')
   
+  # if we have a paragraph open, we close it
+  if [ "$p_open" = "y" ]; then paragraph_toggle; fi
+
   # Output the header
   echo "<h$n>$t</h$n>" >> $OUTPUT
 }
@@ -77,13 +98,18 @@ EOF
 
 # Convert content - TODO
 
+# A paragraph is text between two empty lines, we assume that the first line is not empty
+p_open=n
+
 # We parse every line
 while read line; do
 
+  # Is the line empty? if so we begin a paragraph
+  check_paragraph $line
+
   # Is the line a header?
   pattern=$(echo $line | grep -E "^\#+") || true
-  if [ -n "$pattern" ]; then
-    #TODO - 
+  if [ -n "$pattern" ]; then 
     html_header $line
     continue
   fi
