@@ -15,7 +15,8 @@ CONFIG="$HOME/.config/markdown.conf"
 # Set default author if not defined
 [ -z "$AUTHOR" ] && AUTHOR="$USER"
 
-# ---- Functions ----
+
+# 	------- Functions -------
 
 # Set title in HEAD TITLE tag
 get_title(){
@@ -24,26 +25,36 @@ get_title(){
   echo $t
 }
 
-# Paragraphs <p></p> 
+
+
+# --- Paragraphs <p></p> ---
+
 check_paragraph() {
+  p_old=$p_open
   local ret=0
   echo $line | grep -q -E "^$" || ret=1
   if [ "$ret" = "0" ]; then
-    paragraph_toggle
+    p_open=$(tag_toggle p $p_open)
+    echo "" >> $OUTPUT
   fi
 }
 
-paragraph_toggle() {
-  if [ "$p_open" = "n" ]; then
-      echo "<p>" >> $OUTPUT
-      p_open="y"
+# If a tag is open it closes it or vice versa
+tag_toggle() {
+  local tag=$1
+  local var=$2
+  if [ "$var" = "n" ]; then
+      echo -n "<$tag>" >> $OUTPUT
+      echo "y"
     else
-      echo "</p>" >> $OUTPUT
-      p_open="n"
+      echo -n "</$tag>" >> $OUTPUT
+      echo "n"
   fi
 }
 
-# We output h1, h2, ..., to h5
+
+
+# --- Headers <h*></h*> ---
 html_header() {
   # how many "#" do we have? 
   local n=$(echo $1 | wc -m)
@@ -54,12 +65,36 @@ html_header() {
   t=$(echo $t | sed -E 's/(#)+ //')
   
   # if we have a paragraph open, we close it
-  if [ "$p_open" = "y" ]; then paragraph_toggle; fi
+  if [ "$p_open" = "y" ]; then 
+    p_open=$(tag_toggle p $p_open)
+    echo "" >> $OUTPUT
+  fi
 
   # Output the header
   echo "<h$n>$t</h$n>" >> $OUTPUT
 }
 
+# --- bold, italics and both <i> <b> ---
+
+itabold(){
+  # how many "*" do we have? 
+  local n=$(echo $1 | wc -m)
+  n=$((n-1)) # remove '\n' from count
+  
+  # Get the word
+  local w=$(echo $1 | sed 's/\*//g')
+  
+  
+  #case n in 1 2 3
+  #  3) echo "<b><i>$1<i></b>"
+}
+
+# Check the word and call the correct funcion. If it contains "*" call itabold()
+# if it contains "`" call code()
+format_word() {
+  local w=$(itabold $1)
+  echo $w
+}
 
 
 # ---- MAIN PROGRAM ---- #
@@ -114,11 +149,17 @@ while read line; do
     continue
   fi
  
+ 
  # We parse every word
  for word in $line; do
+ 
   echo -n "DEBUG: "
   echo "$word "
+  format_word $word
+ 
  done
+
+
 done < $INPUT
 
 # Print HTML end    
