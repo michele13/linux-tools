@@ -2,14 +2,14 @@
 
 A markdown to HTML converter written in shell script
 
-## To do
+## Syntax to implement
 
 - [x] Headers
-- [x] Paragraphs
+- [x] Paragraphs **(to fix)**
 - [ ] Bullet Lists
 - [ ] Number Lists
-- [ ] Bold
-- [ ] Italic
+- [ ] Bold **(WIP)**
+- [ ] Italic **(WIP)**
 - [ ] Code
 - [ ] Code blocks
 - [ ] Images

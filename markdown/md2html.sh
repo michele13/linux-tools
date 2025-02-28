@@ -3,6 +3,8 @@
 set -e
 set -o pipefail
 
+DEBUG=1
+
 # Check if configuration file exists and read it
 CONFIG="$HOME/.config/markdown.conf"
 [ -r "$CONFIG" ] && . "$CONFIG"
@@ -18,6 +20,10 @@ CONFIG="$HOME/.config/markdown.conf"
 
 # 	------- Functions -------
 
+debug(){
+  echo "DEBUG: $@"
+}
+
 # Set title in HEAD TITLE tag
 get_title(){
   local t=$(head -n1 ${INPUT})
@@ -30,11 +36,12 @@ get_title(){
 # --- Paragraphs <p></p> ---
 
 check_paragraph() {
-  p_old=$p_open
   local ret=0
   echo $line | grep -q -E "^$" || ret=1
+ 
   if [ "$ret" = "0" ]; then
     p_open=$(tag_toggle p $p_open)
+    debug "OUTPUT "
     echo "" >> $OUTPUT
   fi
 }
@@ -44,9 +51,11 @@ tag_toggle() {
   local tag=$1
   local var=$2
   if [ "$var" = "n" ]; then
+      debug "output <$tag>"
       echo -n "<$tag>" >> $OUTPUT
       echo "y"
     else
+      debug "output </$tag>"
       echo -n "</$tag>" >> $OUTPUT
       echo "n"
   fi
@@ -71,6 +80,7 @@ html_header() {
   fi
 
   # Output the header
+  debug "OUTPUT <h$n>$t</h$n>" 
   echo "<h$n>$t</h$n>" >> $OUTPUT
 }
 
@@ -78,22 +88,35 @@ html_header() {
 
 itabold(){
   # how many "*" do we have? 
-  local n=$(echo $1 | wc -m)
+  local n=$(echo $1 | grep -E -o '\*+' | wc -m)
   n=$((n-1)) # remove '\n' from count
   
   # Get the word
-  local w=$(echo $1 | sed 's/\*//g')
+  local w=$(echo $1 | sed 's/(\*+)//g')
   
   
-  #case n in 1 2 3
-  #  3) echo "<b><i>$1<i></b>"
+  case $n in
+    3)
+      strong_open=$(tag_toggle strong $strong_open)
+      em_open=$(tag_toggle em $em_open)
+      echo -n "$w " >> $OUTPUT ;;
+    2)
+      strong_open=$(tag_toggle strong $strong_open)
+      echo -n "$w " >> $OUTPUT ;;
+    1)
+      strong_open=$(tag_toggle em $em_open)
+      echo -n "$w " >> $OUTPUT ;;      
+    *) echo -n "$w " >> $OUTPUT ;;  
+  
+  esac    
+  echo $w
 }
 
 # Check the word and call the correct funcion. If it contains "*" call itabold()
 # if it contains "`" call code()
 format_word() {
-  local w=$(itabold $1)
-  echo $w
+  local wrd=$(itabold $1)
+  debug "The word is '$wrd'"
 }
 
 
@@ -136,9 +159,17 @@ EOF
 # A paragraph is text between two empty lines, we assume that the first line is not empty
 p_open=n
 
-# We parse every line
-while read line; do
+# Other formatting tags, we assume they are not open
+strong_open=n
+em_open=n
+code_open=n
+codeblock_open=n
 
+ln=0
+# We parse every line
+while IFS= read -r line; do
+  #ln=$(($ln + 1)) 
+  debug "reading '$line'"
   # Is the line empty? if so we begin a paragraph
   check_paragraph $line
 
@@ -152,9 +183,7 @@ while read line; do
  
  # We parse every word
  for word in $line; do
- 
-  echo -n "DEBUG: "
-  echo "$word "
+
   format_word $word
  
  done
