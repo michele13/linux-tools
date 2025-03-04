@@ -6,10 +6,10 @@ A markdown to HTML converter written in shell script
 
 - [x] Headers
 - [x] Paragraphs **(to fix)**
-- [ ] Bullet Lists
-- [ ] Number Lists
-- [ ] Bold **(WIP)**
-- [ ] Italic **(WIP)**
+- [x] Bullet Lists **(only one level, for now)**
+- [x] Number Lists **(only one level, for now)**
+- [x] Bold **(single line only)**
+- [x] Italic **(single line only)**
 - [ ] Code
 - [ ] Code blocks
 - [ ] Images

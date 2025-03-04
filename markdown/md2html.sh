@@ -5,6 +5,11 @@ set -o pipefail
 
 DEBUG=1
 
+if [ "$#" -ne 1 ]; then
+    echo "Usage: $0 file.md"
+    exit 1
+fi
+
 # Check if configuration file exists and read it
 CONFIG="$HOME/.config/markdown.conf"
 [ -r "$CONFIG" ] && . "$CONFIG"
@@ -29,94 +34,104 @@ get_title(){
   local t=$(head -n1 ${INPUT})
   t=${t##\#\ }
   echo $t
-}
+  }
 
 
 
-# --- Paragraphs <p></p> ---
+countchar() {
+  n=$(echo $1 | wc -m)
+  n=$((n-1))
+}  
 
-check_paragraph() {
-  local ret=0
-  echo $line | grep -q -E "^$" || ret=1
- 
-  if [ "$ret" = "0" ]; then
-    p_open=$(tag_toggle p $p_open)
-    debug "OUTPUT "
-    echo "" >> $OUTPUT
+header() {
+  debug "$line"
+  if [ -n "$line" ]; then
+    # how many "#" are in the line  ?
+    n=$(echo $1 | wc -m)
+    n=$((n-1))
+    content=$(echo "$line" | sed -E "s/($header_pattern)//")
+    result="<h$n>$content</h$n>"
+    debug "$result"
+    echo "$result" >> $OUTPUT
   fi
 }
 
-# If a tag is open it closes it or vice versa
-tag_toggle() {
-  local tag=$1
-  local var=$2
-  if [ "$var" = "n" ]; then
-      debug "output <$tag>"
-      echo -n "<$tag>" >> $OUTPUT
-      echo "y"
-    else
-      debug "output </$tag>"
-      echo -n "</$tag>" >> $OUTPUT
-      echo "n"
+ol() {
+  if [ -n "$line" ]; then
+  debug "$line"
+    if [ $in_ol -eq 0 ]; then
+      debug "<ol>" 
+      echo "<ol>" >> $OUTPUT
+      in_ol=1
+    fi
+  content=$(echo "$line" | sed -E "s/$ol_pattern//")
+  result="<li>$content</li>"
+  debug "$result"
+  echo "$result" >> $OUTPUT
+  fi
+}
+
+ul() {
+  if [ -n "$line" ]; then
+  debug "$line"
+    if [ $in_ul -eq 0 ]; then
+      debug "<ul>" 
+      echo "<ul>" >> $OUTPUT
+      in_ul=1
+    fi
+  content=$(echo "$line" | sed -E "s/$ul_pattern//")
+  result="<li>$content</li>"
+  debug "$result"
+  echo "$result" >> $OUTPUT
+  fi
+  
+}
+
+strong(){
+  if [ $in_strong -eq 0 ]; then
+            in_strong=1
+            debug BEFORE: $line
+            line=$(echo "$line" | sed -E "s/$strong_pattern/<strong>\1/")
+            debug AFTER: $line
+            echo $line
+          else
+            in_strong=0
+            line=$(echo "$line" | sed -E "s/$strong_end_pattern/\1<\/strong>/")
+            echo $line
+  fi
+}
+
+# Are we inside a <TAG>? 
+in_ul=0
+in_ol=0
+in_p=0
+in_em=0
+in_strong=0
+
+
+close_ul() {
+  if [ $in_ul -eq 1 ]; then
+   debug "</ul>"
+   echo "</ul>" >> "$OUTPUT"
+   in_ul=0
   fi
 }
 
 
-
-# --- Headers <h*></h*> ---
-html_header() {
-  # how many "#" do we have? 
-  local n=$(echo $1 | wc -m)
-  n=$((n-1)) # remove '\n' from count
-  
-  # Remove '#'
-  local t=$line
-  t=$(echo $t | sed -E 's/(#)+ //')
-  
-  # if we have a paragraph open, we close it
-  if [ "$p_open" = "y" ]; then 
-    p_open=$(tag_toggle p $p_open)
-    echo "" >> $OUTPUT
+close_ol() {
+  if [ $in_ol -eq 1 ]; then
+   echo "</ol>" >> "$OUTPUT"
+   debug "</ol>"
+   in_ol=0
   fi
-
-  # Output the header
-  debug "OUTPUT <h$n>$t</h$n>" 
-  echo "<h$n>$t</h$n>" >> $OUTPUT
 }
 
-# --- bold, italics and both <i> <b> ---
-
-itabold(){
-  # how many "*" do we have? 
-  local n=$(echo $1 | grep -E -o '\*+' | wc -m)
-  n=$((n-1)) # remove '\n' from count
-  
-  # Get the word
-  local w=$(echo $1 | sed 's/(\*+)//g')
-  
-  
-  case $n in
-    3)
-      strong_open=$(tag_toggle strong $strong_open)
-      em_open=$(tag_toggle em $em_open)
-      echo -n "$w " >> $OUTPUT ;;
-    2)
-      strong_open=$(tag_toggle strong $strong_open)
-      echo -n "$w " >> $OUTPUT ;;
-    1)
-      strong_open=$(tag_toggle em $em_open)
-      echo -n "$w " >> $OUTPUT ;;      
-    *) echo -n "$w " >> $OUTPUT ;;  
-  
-  esac    
-  echo $w
-}
-
-# Check the word and call the correct funcion. If it contains "*" call itabold()
-# if it contains "`" call code()
-format_word() {
-  local wrd=$(itabold $1)
-  debug "The word is '$wrd'"
+close_p() {
+  if [ $in_p -eq 1 ]; then
+   echo "</p>" >> "$OUTPUT"
+   debug "</p>"
+   in_p=0
+  fi
 }
 
 
@@ -124,7 +139,7 @@ format_word() {
 
 # Parsing Arguments
 INPUT="$1"
-OUTPUT="$2"
+OUTPUT="${INPUT%.md}.html"
 
 # If we can't read the INPUT file EXIT (Error 404)
 if [ ! -r $INPUT ]; then
@@ -132,20 +147,14 @@ if [ ! -r $INPUT ]; then
   exit 404
 fi
 
-# Start convertion..
+# --- convertion --- #
 
-# if $OUTPUT is not provided we use the input filename as a base
-[ -z "$OUTPUT" ] && OUTPUT=${INPUT%%.md}.html
-echo "Converting $INPUT to $OUTPUT"
-
-# Output HTML
-
-# Set title
 TITLE=$(get_title)
 
-
-# Print HTML Head
-cat > $OUTPUT << EOF
+{
+# Print HTML Head 
+cat << EOF > "$OUTPUT"
+<!doctype html>
 <html lang="$HTML_LANG"><head>
 <title>$TITLE</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -154,48 +163,81 @@ cat > $OUTPUT << EOF
 </head><body>    
 EOF
 
-# Convert content - TODO
+# Process Markdown
 
-# A paragraph is text between two empty lines, we assume that the first line is not empty
-p_open=n
+#   Markdown Patterns
 
-# Other formatting tags, we assume they are not open
-strong_open=n
-em_open=n
-code_open=n
-codeblock_open=n
+    header_pattern="^\#+ "
+    ul_pattern="(^\* )|(^\- )"
+    ol_pattern="^[0-9]+\. "
+    strong_pattern="\*\*([^*]+)\*\*"
+    em_pattern="\*([^*]+)\*"
 
-ln=0
-# We parse every line
-while IFS= read -r line; do
-  #ln=$(($ln + 1)) 
-  debug "reading '$line'"
-  # Is the line empty? if so we begin a paragraph
-  check_paragraph $line
+l=1
 
-  # Is the line a header?
-  pattern=$(echo $line | grep -E "^\#+") || true
-  if [ -n "$pattern" ]; then 
-    html_header $line
+# The OR statement is needed to read the last line of the file if id does not contain a newline
+while IFS= read -r line || [ -n "$line" ]; do
+  
+  # DEBUG: What are we reading?
+  debug "line $l: $line"
+  l=$((l+1))
+  
+  # blank line
+  if [ "$line" = "$(echo "$line" | grep -E "^$")" ]; then
+    close_ol
+    close_ul
+    close_p
+  fi  
+
+
+
+  # Header
+  if [ "$line" = "$(echo "$line" | grep -E "$header_pattern")" ]; then
+    close_ol
+    close_ul
+    close_p
+    header $line
     continue
   fi
- 
- 
- # We parse every word
- for word in $line; do
 
-  format_word $word
- 
- done
+  # <ul> Lists
+  if [ "$line" = "$(echo "$line" | grep -E "$ul_pattern")" ]; then
+    close_ol
+    close_p
+    ul $line
+    continue
+  fi
+
+# <ol> Lists
+  if [ "$line" = "$(echo "$line" | grep -E "$ol_pattern")" ]; then
+    close_ul
+    close_p
+    ol $line
+    continue
+  fi
 
 
-done < $INPUT
+  # Paragraphs
 
-# Print HTML end    
-cat >> $OUTPUT << "EOF"
+  # Format bold and Italic.
+  # WARNING! Leave this line AFTER the list implementation to avoid unexpected results
+  line=$(echo $line | sed -E "s/$strong_pattern/<strong>\1<\/strong>/g ; s/$em_pattern/<em>\1<\/em>/g")
+
+
+ echo $line >> $OUTPUT
+
+
+done < "$INPUT"
+
+close_ol
+close_ul
+close_p
+
+
+# Footer
+cat << "EOF" >> "$OUTPUT"
 </body></html>
 EOF
+}
 
-# End of output
-exit 0
 
