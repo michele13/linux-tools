@@ -225,7 +225,7 @@ while IFS= read -r line || [ -n "$line" ]; do
     close_ul
     close_p
     header $line
-    inline_strong_em
+    code; inline_strong_em
     echo "$line" >> "$OUTPUT"
     continue
   fi
@@ -234,7 +234,7 @@ while IFS= read -r line || [ -n "$line" ]; do
   if [ "$line" = "$(echo "$line" | grep -E "$ul_pattern")" ]; then
     close_ol
     close_p
-    ul; inline_strong_em
+    ul; code; inline_strong_em
     echo "$line" >> "$OUTPUT"
     continue
   fi
@@ -242,7 +242,7 @@ while IFS= read -r line || [ -n "$line" ]; do
   if [ "$line" = "$(echo "$line" | grep -E "$ol_pattern")" ]; then
     close_ul
     close_p
-    ol; inline_strong_em
+    ol; code; inline_strong_em
     echo "$line" >> "$OUTPUT"
     continue
   fi
