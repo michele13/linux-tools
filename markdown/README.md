@@ -11,10 +11,11 @@ A markdown to HTML converter written in shell script
 - [x] Bold **(single line only)**
 - [x] Italic **(single line only)**
 - [x] Code
-- [ ] Code blocks
+- [x] Code blocks
 - [ ] Images
 - [ ] Links
 
 ## TODO
 
 - [x] Add formatting to lists
+- Nest HTML inside markdown?

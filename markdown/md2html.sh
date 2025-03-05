@@ -96,6 +96,16 @@ print_paragraph() {
     fi  
 }
 
+codeblock() {
+  if [ $in_codeblock -eq 0 ]; then
+    in_codeblock=1
+    echo "<pre><code>" >> $OUTPUT
+  else
+    in_codeblock=0
+    echo "</pre></code>" >> $OUTPUT
+  fi
+}
+
 code() {
   debug "INPUT OF CODE: $line"
   content=$(echo "$line" | sed -E "s/.*\`([^\`]+)\`.*/\1/")
@@ -109,8 +119,8 @@ code() {
 
 escape_string(){
   debug "ESCAPE STRING INPUT: "$content""
-
-   escaped_content=$(echo "$content" | sed "s/\&/\&amp;/g ; s/</\&lt;/g ; s/*/\&#42;/g ; s/>/\&gt;/g ; s/\//&#47;/g")
+# ; s/\//&#47;/g
+   escaped_content=$(echo "$content" | sed "s/\&/\&amp;/g ; s/</\&lt;/g ; s/*/\&#42;/g ; s/>/\&gt;/g")
 
   debug "ESCAPE STRING OUTPUT: "$content""
 }
@@ -125,6 +135,7 @@ in_ol=0
 in_p=0
 in_em=0
 in_strong=0
+in_codeblock=0
 
 
 close_ul() {
@@ -193,6 +204,7 @@ EOF
     em_pattern="\*([^*]+)\*"
     code_pattern='`([^`]+)`'
     p_pattern="[0-9a-zA-Z ]+"
+    codeblock_pattern='```'
 
 l=1
 
@@ -218,6 +230,16 @@ while IFS= read -r line || [ -n "$line" ]; do
 
 
   
+  # Code blocks
+  if echo "$line" | grep -qE "$codeblock_pattern"; then
+    close_ol
+    close_ul
+    close_p
+    codeblock
+    continue  
+  fi
+
+if [ $in_codeblock -eq 0 ]; then
   
   # Header
   if [ "$line" = "$(echo "$line" | grep -E "$header_pattern")" ]; then
@@ -238,6 +260,7 @@ while IFS= read -r line || [ -n "$line" ]; do
     echo "$line" >> "$OUTPUT"
     continue
   fi
+
 # <ol> Lists
   if [ "$line" = "$(echo "$line" | grep -E "$ol_pattern")" ]; then
     close_ul
@@ -249,7 +272,7 @@ while IFS= read -r line || [ -n "$line" ]; do
 
 
 # code line here, before other inline stuff
-   if echo "$line" | grep -qE "$code_pattern"; then
+  if echo "$line" | grep -qE "$code_pattern"; then
     code
     print_paragraph
     continue
@@ -269,6 +292,14 @@ while IFS= read -r line || [ -n "$line" ]; do
    if echo "$line" | grep -qE "$p_pattern"; then
       print_paragraph
    fi
+
+else
+
+  content="$line"
+  escape_string
+  echo "$escaped_content" >> $OUTPUT
+
+fi
 
 done < "$INPUT"
 
