@@ -5,8 +5,8 @@ set -o pipefail
 
 DEBUG=1
 
-if [ "$#" -ne 1 ]; then
-    echo "Usage: $0 file.md"
+if [ "$#" -lt 1 ]; then
+    echo "Usage: $0 file.md [output.html]"
     exit 1
 fi
 
@@ -26,7 +26,10 @@ CONFIG="$HOME/.config/markdown.conf"
 # 	------- Functions -------
 
 debug(){
-  echo "DEBUG: $@"
+  if [ $DEBUG -eq 1 ]; then
+  echo ""
+  printf "DEBUG: %s\n" "$*"
+  fi
 }
 
 # Set title in HEAD TITLE tag
@@ -38,21 +41,16 @@ get_title(){
 
 
 
-countchar() {
-  n=$(echo $1 | wc -m)
-  n=$((n-1))
-}  
-
 header() {
-  debug "$line"
   if [ -n "$line" ]; then
+  debug "HEADER INPUT: $line"
     # how many "#" are in the line  ?
     n=$(echo $1 | wc -m)
     n=$((n-1))
     content=$(echo "$line" | sed -E "s/($header_pattern)//")
     result="<h$n>$content</h$n>"
-    debug "$result"
-    echo "$result" >> $OUTPUT
+    debug "HEADER RESULT: $result"
+    line="$result"
   fi
 }
 
@@ -61,13 +59,13 @@ ol() {
   debug "$line"
     if [ $in_ol -eq 0 ]; then
       debug "<ol>" 
-      echo "<ol>" >> $OUTPUT
+      echo "<ol>" >> "$OUTPUT"
       in_ol=1
     fi
   content=$(echo "$line" | sed -E "s/$ol_pattern//")
   result="<li>$content</li>"
   debug "$result"
-  echo "$result" >> $OUTPUT
+  line="$result"
   fi
 }
 
@@ -76,29 +74,49 @@ ul() {
   debug "$line"
     if [ $in_ul -eq 0 ]; then
       debug "<ul>" 
-      echo "<ul>" >> $OUTPUT
+      echo "<ul>" >> "$OUTPUT"
       in_ul=1
     fi
   content=$(echo "$line" | sed -E "s/$ul_pattern//")
   result="<li>$content</li>"
   debug "$result"
-  echo "$result" >> $OUTPUT
+  line="$result" 
   fi
   
 }
 
-strong(){
-  if [ $in_strong -eq 0 ]; then
-            in_strong=1
-            debug BEFORE: $line
-            line=$(echo "$line" | sed -E "s/$strong_pattern/<strong>\1/")
-            debug AFTER: $line
-            echo $line
-          else
-            in_strong=0
-            line=$(echo "$line" | sed -E "s/$strong_end_pattern/\1<\/strong>/")
-            echo $line
-  fi
+print_paragraph() {
+  if [ $in_p -eq 0 ]; then
+      in_p=1
+      echo -n "<p>$line" >> "$OUTPUT"
+    else
+      if [ $in_p -eq 1 ]; then
+        echo -n " $line" >> "$OUTPUT"
+      fi  
+    fi  
+}
+
+code() {
+  debug "INPUT OF CODE: $line"
+  content=$(echo "$line" | sed -E "s/.*\`([^\`]+)\`.*/\1/")
+  debug "EXTRACTED CONTENT: $content"
+  
+  #escaped_content="a"
+  escape_string
+  line=$(echo "$line" | sed -E "s/$code_pattern/<code>$escaped_content<\/code>/g")
+  debug "OUTPUT OF CODE: $line"
+}
+
+escape_string(){
+  debug "ESCAPE STRING INPUT: "$content""
+
+   escaped_content=$(echo "$content" | sed "s/\&/\&amp;/g ; s/</\&lt;/g ; s/*/\&#42;/g ; s/>/\&gt;/g ; s/\//&#47;/g")
+
+  debug "ESCAPE STRING OUTPUT: "$content""
+}
+
+inline_strong_em(){
+  line=$(echo "$line" | sed -E "s/$strong_pattern/<strong>\1<\/strong>/g ; s/$em_pattern/<em>\1<\/em>/g")
 }
 
 # Are we inside a <TAG>? 
@@ -139,7 +157,8 @@ close_p() {
 
 # Parsing Arguments
 INPUT="$1"
-OUTPUT="${INPUT%.md}.html"
+OUTPUT="$2"
+[ -z "$OUTPUT" ] &&  OUTPUT="${INPUT%.md}.html";
 
 # If we can't read the INPUT file EXIT (Error 404)
 if [ ! -r $INPUT ]; then
@@ -168,10 +187,12 @@ EOF
 #   Markdown Patterns
 
     header_pattern="^\#+ "
-    ul_pattern="(^\* )|(^\- )"
+    ul_pattern="(^\*\ )|(^\-\ )"
     ol_pattern="^[0-9]+\. "
     strong_pattern="\*\*([^*]+)\*\*"
     em_pattern="\*([^*]+)\*"
+    code_pattern='`([^`]+)`'
+    p_pattern="[0-9a-zA-Z ]+"
 
 l=1
 
@@ -180,7 +201,13 @@ while IFS= read -r line || [ -n "$line" ]; do
   
   # DEBUG: What are we reading?
   debug "line $l: $line"
-  l=$((l+1))
+  
+  # save next line into variable
+  nl=$((l+1))
+  next_line="$(sed "${nl}!d" $INPUT)"
+  debug "NEXT LINE: $next_line"
+
+  l=$nl
   
   # blank line
   if [ "$line" = "$(echo "$line" | grep -E "^$")" ]; then
@@ -190,13 +217,16 @@ while IFS= read -r line || [ -n "$line" ]; do
   fi  
 
 
-
+  
+  
   # Header
   if [ "$line" = "$(echo "$line" | grep -E "$header_pattern")" ]; then
     close_ol
     close_ul
     close_p
     header $line
+    inline_strong_em
+    echo "$line" >> "$OUTPUT"
     continue
   fi
 
@@ -204,28 +234,41 @@ while IFS= read -r line || [ -n "$line" ]; do
   if [ "$line" = "$(echo "$line" | grep -E "$ul_pattern")" ]; then
     close_ol
     close_p
-    ul $line
+    ul; inline_strong_em
+    echo "$line" >> "$OUTPUT"
     continue
   fi
-
 # <ol> Lists
   if [ "$line" = "$(echo "$line" | grep -E "$ol_pattern")" ]; then
     close_ul
     close_p
-    ol $line
+    ol; inline_strong_em
+    echo "$line" >> "$OUTPUT"
     continue
   fi
 
 
+# code line here, before other inline stuff
+   if echo "$line" | grep -qE "$code_pattern"; then
+    code
+    print_paragraph
+    continue
+  fi
+
+
+# Format bold and Italic.
+  # WARNING! Leave this line AFTER the list implementation to avoid unexpected results
+
+  inline_strong_em
+
+
   # Paragraphs
 
-  # Format bold and Italic.
-  # WARNING! Leave this line AFTER the list implementation to avoid unexpected results
-  line=$(echo $line | sed -E "s/$strong_pattern/<strong>\1<\/strong>/g ; s/$em_pattern/<em>\1<\/em>/g")
-
-
- echo $line >> $OUTPUT
-
+  
+  # If we have a paragraph pattern. and are not inside one, start a paragraph
+   if echo "$line" | grep -qE "$p_pattern"; then
+      print_paragraph
+   fi
 
 done < "$INPUT"
 
