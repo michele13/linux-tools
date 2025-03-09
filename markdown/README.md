@@ -12,6 +12,7 @@ A markdown to HTML converter written in shell script
 - [x] Italic **(single line only)**
 - [x] Code
 - [x] Code blocks
+- [ ] Quotes
 - [ ] Images
 - [ ] Links
 
@@ -19,3 +20,13 @@ A markdown to HTML converter written in shell script
 
 - [x] Add formatting to lists
 - Nest HTML inside markdown?
+- lists lines problem: when a bullet list item is in two or more lines:
+
+    >  1. Like This
+    >     Example Here
+    >
+
+    It does not behave
+
+- There's still a problem with how paragraphs are handled!
+- The text file inside here is a good "benchmark" for the script: https://daringfireball.net/projects/markdown/index.text
