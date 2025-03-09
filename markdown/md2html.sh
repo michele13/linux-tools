@@ -47,7 +47,8 @@ header() {
     # how many "#" are in the line  ?
     n=$(echo $1 | wc -m)
     n=$((n-1))
-    content=$(echo "$line" | sed -E "s/($header_pattern)//")
+    content=$(echo "$line" | sed -E -e "s/$header_pattern2/\1/" \
+     -e "s/($header_pattern)//")
     result="<h$n>$content</h$n>"
     debug "HEADER RESULT: $result"
     line="$result"
@@ -203,6 +204,9 @@ EOF
 #   Markdown Patterns
 
     header_pattern="^\#+ "
+    header_pattern2='^#+ (.*) #+'
+    h2_pattern='^-+'
+    h1_pattern='^=+'
     ul_pattern="(^\*\ )|(^\-\ )"
     ol_pattern="^[0-9]+\. "
     strong_pattern="\*\*([^*]+)\*\*"
@@ -247,11 +251,31 @@ while IFS= read -r line || [ -n "$line" ]; do
 if [ $in_codeblock -eq 0 ]; then
   
   # Header
-  if echo "$line" | grep -qE "$header_pattern"; then
+  if echo "$line" | (grep -qE "$header_pattern" || grep -qE "$header_pattern2"); then
     close_ol
     close_ul
     close_p
     header $line
+    code; inline_strong_em
+    echo "$line" >> "$OUTPUT"
+    continue
+  fi
+
+  if echo "$next_line" | grep -qE "$h1_pattern"; then
+    close_ol
+    close_ul
+    close_p
+    header 1
+    code; inline_strong_em
+    echo "$line" >> "$OUTPUT"
+    continue
+  fi
+
+  if echo "$next_line" | grep -qE "$h2_pattern"; then
+    close_ol
+    close_ul
+    close_p
+    header --
     code; inline_strong_em
     echo "$line" >> "$OUTPUT"
     continue
