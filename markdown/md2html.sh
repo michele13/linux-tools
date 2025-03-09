@@ -227,7 +227,7 @@ while IFS= read -r line || [ -n "$line" ]; do
   l=$nl
   
   # blank line
-  if echo "$line" | grep -qE '^[ \t]*$")'; then
+  if echo "$line" | grep -qE '^[ \t]*$'; then
     close_ol
     close_ul
     close_p

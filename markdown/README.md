@@ -28,5 +28,4 @@ A markdown to HTML converter written in shell script
 
     It does not behave
 
-- There's still a problem with how paragraphs are handled!
 - The text file inside here is a good "benchmark" for the script: https://daringfireball.net/projects/markdown/index.text
