@@ -107,20 +107,25 @@ codeblock() {
 }
 
 code() {
-  debug "INPUT OF CODE: $line"
-  content=$(echo "$line" | sed -E "s/.*\`([^\`]+)\`.*/\1/")
-  debug "EXTRACTED CONTENT: $content"
-  
-  #escaped_content="a"
-  escape_string
-  line=$(echo "$line" | sed -E "s/$code_pattern/<code>$escaped_content<\/code>/g")
-  debug "OUTPUT OF CODE: $line"
+  if $(echo $line | grep -qE "$code_pattern"); then
+    debug "INPUT OF CODE: $line"
+    content=$(echo "$line" | sed -E "s/.*\`([^\`]+)\`.*/\1/")
+    debug "EXTRACTED CONTENT: $content"
+    escape_string
+    line=$(echo "$line" | sed -E "s/$code_pattern/<code>$escaped_content<\/code>/g")
+    debug "OUTPUT OF CODE: $line"
+  fi  
 }
 
 escape_string(){
   debug "ESCAPE STRING INPUT: "$content""
 # ; s/\//&#47;/g
-   escaped_content=$(echo "$content" | sed "s/\&/\&amp;/g ; s/</\&lt;/g ; s/*/\&#42;/g ; s/>/\&gt;/g")
+   escaped_content=$(echo "$content" | sed -E -e 's|$|&#36;|g' \
+     -e 's|&|&amp;|g' \
+     -e 's|<|&lt;|g' \
+     -e 's|\*|&#42;|g' \
+     -e 's|>|&gt;|g' \
+     -e 's|/|&#47;|g')
 
   debug "ESCAPE STRING OUTPUT: "$content""
 }
@@ -222,7 +227,7 @@ while IFS= read -r line || [ -n "$line" ]; do
   l=$nl
   
   # blank line
-  if [ "$line" = "$(echo "$line" | grep -E "^$")" ]; then
+  if echo "$line" | grep -qE '^[ \t]*$")'; then
     close_ol
     close_ul
     close_p
@@ -242,7 +247,7 @@ while IFS= read -r line || [ -n "$line" ]; do
 if [ $in_codeblock -eq 0 ]; then
   
   # Header
-  if [ "$line" = "$(echo "$line" | grep -E "$header_pattern")" ]; then
+  if echo "$line" | grep -qE "$header_pattern"; then
     close_ol
     close_ul
     close_p
@@ -253,7 +258,7 @@ if [ $in_codeblock -eq 0 ]; then
   fi
 
   # <ul> Lists
-  if [ "$line" = "$(echo "$line" | grep -E "$ul_pattern")" ]; then
+  if echo "$line" | grep -qE "$ul_pattern"; then
     close_ol
     close_p
     ul; code; inline_strong_em
@@ -262,7 +267,7 @@ if [ $in_codeblock -eq 0 ]; then
   fi
 
 # <ol> Lists
-  if [ "$line" = "$(echo "$line" | grep -E "$ol_pattern")" ]; then
+  if echo "$line" | grep -qE "$ol_pattern"; then
     close_ul
     close_p
     ol; code; inline_strong_em
