@@ -265,7 +265,9 @@ if [ $in_codeblock -eq 0 ]; then
     close_ol
     close_ul
     close_p
-    header 1
+    # We need a certain number of the same characters 
+    # (eg. 1s) to indicate the header level 
+    header 1 
     code; inline_strong_em
     echo "$line" >> "$OUTPUT"
     continue
@@ -275,7 +277,9 @@ if [ $in_codeblock -eq 0 ]; then
     close_ol
     close_ul
     close_p
-    header --
+    # We need a certain number of the same characters 
+    # (eg. dashes) to indicate the header level 
+    header --  
     code; inline_strong_em
     echo "$line" >> "$OUTPUT"
     continue
