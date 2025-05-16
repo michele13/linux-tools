@@ -1,6 +1,6 @@
 #!/bin/bash
 
-[ -z "$NOCLEAR" ] && exec env -i NOCLEAR=1 HOME=$HOME TERM=$TERM PS1="(.venv) $PS1" "$0" "$"@
+[ -z "$NOCLEAR" ] && exec env -i NOCLEAR=1 HOME=$HOME TERM=$TERM PS1="(.venv) $PS1" "$0" "$@"
 
 unset NOCLEAR
 
