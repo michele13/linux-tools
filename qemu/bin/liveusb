@@ -1,0 +1,12 @@
+#!/bin/sh
+
+HDA="$1"
+[ -z "$RAM" ] && RAM=2048
+[ -z "$CPU" ] && CPU=1
+[ -n "$UEFI" ] && UEFI="-drive if=pflash,format=raw,readonly=on,file=/opt/qemu/share/qemu/edk2-x86_64-code.fd"
+
+#/opt/qemu/bin/qemu-system-x86_64 -accel kvm -smp core=$CPU,threads=1 -m "$RAM"M -boot d -cdrom $1
+
+sudo /opt/qemu/bin/qemu-system-x86_64  \
+  $UEFI -accel kvm -m "$RAM"M -smp cpus=$CPU,threads=1 \
+  -drive format=raw,file="$HDA"
