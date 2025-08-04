@@ -1,0 +1,16 @@
+#!/bin/sh
+[ -z "$NOCLEAR" ] && exec env -i NOCLEAR=1 TERM="$TERM"  PS1="$PS1" "$0" "$@"
+
+unset NOCLEAR
+
+PATH=/cross/bin:/bin
+HOME=/root
+PS1="\u@\h:\w# "
+
+export PATH PS1 HOME
+
+mountpoint -q /proc || mount -t proc none /proc
+mountpoint -q /sys || mount -t sysfs none /sys
+
+exec env -i  PATH="$PATH" PS1="$PS1" HOME="$HOME" /bin/sh -l
+
