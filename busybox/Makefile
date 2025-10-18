@@ -45,3 +45,5 @@ distclean:
 	rm -rf $(BUILD_DIR)
 
 	
+
+$(BUILD_DIR)/$(ARCHIVE): download
