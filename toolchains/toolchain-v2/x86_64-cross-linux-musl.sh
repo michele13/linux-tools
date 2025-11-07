@@ -21,7 +21,7 @@ TARGET=x86_64-cross-linux-musl
 INSTALL_DIR=$CWD/cross/$TARGET
 WORK=$CWD/work/$TARGET
 #JOBS=$(nproc)
-JOBS=1
+JOBS=4
 
 # CPU ARCH
 #XARCH="armv8-a"
@@ -51,8 +51,8 @@ export CC CXX
 mkdir -pv $CWD/downloads $SRC $WORK
 cd $CWD/downloads
 
-[ -z $OFFLINE ] && OFFLINE=0
-if [  $OFFLINE == "0" ]; then
+[ -z "$OFFLINE" ] && OFFLINE=0
+if [ "$OFFLINE" = "0" ]; then
 unset OFFLINE
 
 wget -c https://sourceware.org/pub/binutils/releases/binutils-$binutils_ver.tar.xz
@@ -65,8 +65,8 @@ wget -c https://www.kernel.org/pub/linux/kernel/v6.x/linux-$linux_ver.tar.xz
 echo "OFFLINE=1" >> $CWD/env
 fi
 # Extract tarballs
-[ -z $EXTRACTED ] && EXTRACTED=0
-if [ $EXTRACTED == "0"  ]; then
+[ -z "$EXTRACTED" ] && EXTRACTED=0
+if [ "$EXTRACTED" = "0"  ]; then
 unset EXTRACTED
 
 for t in *.tar*; do tar --skip-old-files -xvf $t -C $SRC; done
@@ -98,8 +98,8 @@ echo "=> BINUTILS"
 mkdir -p build-binutils
 cd build-binutils
 
-[ -z $BINUTILS ] && BINUTILS=0
-if [ $BINUTILS == "0" ]; then
+[ -z "$BINUTILS" ] && BINUTILS=0
+if [ "$BINUTILS" = "0" ]; then
 unset BINUTILS
 
 $SRC/binutils-$binutils_ver/configure --with-sysroot=/$TARGET --prefix= --target=$TARGET --disable-multilib --disable-nls --enable-gprofng=no --enable-default-hash-style=gnu --disable-werror $COMMON_CONFIG
@@ -115,8 +115,8 @@ cd ../
 mkdir -p build-headers
 cd build-headers
 
-[ -z $KERNEL_HEADERS ] && KERNEL_HEADERS=0
-if [ $KERNEL_HEADERS == "0" ]; then
+[ -z "$KERNEL_HEADERS" ] && KERNEL_HEADERS=0
+if [ "$KERNEL_HEADERS" = "0" ]; then
 unset KERNEL_HEADERS
 
 make -C $SRC/linux-$linux_ver mrproper
@@ -136,8 +136,8 @@ cd ../
 mkdir -p build-musl
 cd build-musl
 
-[ -z $LIBC_HEADERS ] && LIBC_HEADERS=0
-if [ $LIBC_HEADERS == "0" ]; then
+[ -z "$LIBC_HEADERS" ] && LIBC_HEADERS=0
+if [ "$LIBC_HEADERS" = "0" ]; then
 unset LIBC_HEADERS
 
 COMMON_CONFIG="" $SRC/musl-$musl_ver/configure --prefix=/usr --host=$TARGET --disable-nls --disable-werror $MUSL_CONFIGURE_EXTRA $COMMON_CONFIG
@@ -156,8 +156,8 @@ echo "=> GCC CORE"
 mkdir -p build-gcc
 cd build-gcc
 
-[ -z $GCC_CORE ] && GCC_CORE=0
-if [ $GCC_CORE == "0" ]; then
+[ -z "$GCC_CORE" ] && GCC_CORE=0
+if [ "$GCC_CORE" = "0" ]; then
 unset GCC_CORE
 
 # Disable libsanitizer is necessary to build GCC without libcrypt installed
@@ -169,8 +169,8 @@ fi
 
 
 echo "=> MUSL STARTUP FILES"
-[ -z $LIBC_CRT ] && LIBC_CRT=0
-if [ $LIBC_CRT == "0" ]; then
+[ -z "$LIBC_CRT" ] && LIBC_CRT=0
+if [ "$LIBC_CRT" = "0" ]; then
 unset LIBC_CRT
 
 #make -j$JOBS csu/subdir_lib CC=gcc CXX=g++  
@@ -185,8 +185,8 @@ echo "=> LIBGCC"
 
 cd ../build-gcc
 
-[ -z $LIBGCC ] && LIBGCC=0
-if [ $LIBGCC == "0" ]; then
+[ -z "$LIBGCC" ] && LIBGCC=0
+if [ "$LIBGCC" = "0" ]; then
 unset LIBGCC
 
 make -j$JOBS all-target-libgcc enable_shared=no
@@ -202,8 +202,8 @@ echo "=> FINISH LIBC"
 mkdir -p ../build-musl
 cd ../build-musl
 
-[ -z $LIBC ] && LIBC=0
-if [ $LIBC == "0" ]; then
+[ -z "$LIBC" ] && LIBC=0
+if [ "$LIBC" = "0" ]; then
 unset LIBC
 
 COMMON_CONFIG="" $SRC/musl-$musl_ver/configure --prefix=/usr --host=$TARGET --disable-nls --disable-werror $MUSL_CONFIGURE_EXTRA $COMMON_CONFIG
@@ -216,8 +216,8 @@ fi
 echo "=> FINISH GCC"
 cd ../build-gcc
 
-[ -z $GCC ] && GCC=0
-if [ $GCC == "0" ]; then
+[ -z "$GCC" ] && GCC=0
+if [ "$GCC" = "0" ]; then
 unset GCC
 
 make -C $TARGET/libgcc distclean
@@ -225,8 +225,8 @@ make -j$JOBS all-target-libgcc
 make install-strip-target-libgcc DESTDIR=$INSTALL_DIR
 make -j$JOBS
 make install-strip DESTDIR=$INSTALL_DIR
-cat $SRC/gcc-$gcc_ver/gcc/limitx.h $SRC/gcc-$gcc_ver/gcc/glimits.h $SRC/gcc-$gcc_ver/gcc/limity.h > \
-  $INSTALL_DIR/lib/gcc/$TARGET/$gcc_ver/include/limits.h
+#cat $SRC/gcc-$gcc_ver/gcc/limitx.h $SRC/gcc-$gcc_ver/gcc/glimits.h $SRC/gcc-$gcc_ver/gcc/limity.h > \
+#  $INSTALL_DIR/lib/gcc/$TARGET/$gcc_ver/include/limits.h
 echo "GCC=1" >> $CWD/env
 
 fi

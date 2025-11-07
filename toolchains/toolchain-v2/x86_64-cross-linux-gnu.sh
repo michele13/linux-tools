@@ -55,8 +55,8 @@ export CC CXX
 mkdir -pv $CWD/downloads $SRC $WORK
 cd $CWD/downloads
 
-[ -z $OFFLINE ] && OFFLINE=0
-if [  $OFFLINE == "0" ]; then
+[ -z "$OFFLINE" ] && OFFLINE=0
+if [  "$OFFLINE" = "0" ]; then
 unset OFFLINE
 
 wget -c https://sourceware.org/pub/binutils/releases/binutils-$binutils_ver.tar.xz
@@ -69,8 +69,8 @@ wget -c https://www.kernel.org/pub/linux/kernel/v6.x/linux-$linux_ver.tar.xz
 echo "OFFLINE=1" >> $CWD/env
 fi
 # Extract tarballs
-[ -z $EXTRACTED ] && EXTRACTED=0
-if [ $EXTRACTED == "0"  ]; then
+[ -z "$EXTRACTED" ] && EXTRACTED=0
+if [ "$EXTRACTED" = "0"  ]; then
 unset EXTRACTED
 
 for t in *.tar*; do tar --skip-old-files -xvf $t -C $SRC; done
@@ -102,8 +102,8 @@ echo "=> BINUTILS"
 mkdir -p build-binutils
 cd build-binutils
 
-[ -z $BINUTILS ] && BINUTILS=0
-if [ $BINUTILS == "0" ]; then
+[ -z "$BINUTILS" ] && BINUTILS=0
+if [ "$BINUTILS" = "0" ]; then
 unset BINUTILS
 
 $SRC/binutils-$binutils_ver/configure --with-sysroot=/$TARGET --prefix= --target=$TARGET --disable-multilib --disable-nls --enable-gprofng=no --enable-default-hash-style=gnu --disable-werror $COMMON_CONFIG
@@ -119,8 +119,8 @@ cd ../
 mkdir -p build-headers
 cd build-headers
 
-[ -z $KERNEL_HEADERS ] && KERNEL_HEADERS=0
-if [ $KERNEL_HEADERS == "0" ]; then
+[ -z "$KERNEL_HEADERS" ] && KERNEL_HEADERS=0
+if [ "$KERNEL_HEADERS" = "0" ]; then
 unset KERNEL_HEADERS
 
 make -C $SRC/linux-$linux_ver mrproper
@@ -141,8 +141,8 @@ cd ../
 mkdir -p build-gcc
 cd build-gcc
 
-[ -z $GCC_CORE ] && GCC_CORE=0
-if [ $GCC_CORE == "0" ]; then
+[ -z "$GCC_CORE" ] && GCC_CORE=0
+if [ "$GCC_CORE" = "0" ]; then
 unset GCC_CORE
 
 # Disable libsanitizer is necessary to build GCC without libcrypt installed
@@ -159,8 +159,8 @@ cd ../
 mkdir -p build-glibc
 cd build-glibc
 
-[ -z $LIBC_HEADERS ] && LIBC_HEADERS=0
-if [ $LIBC_HEADERS == "0" ]; then
+[ -z "$LIBC_HEADERS" ] && LIBC_HEADERS=0
+if [ "$LIBC_HEADERS" = "0" ]; then
 unset LIBC_HEADERS
 
 COMMON_CONFIG="" $SRC/glibc-$glibc_ver/configure --prefix=/usr --host=$TARGET --with-headers=$INSTALL_DIR/$TARGET/include --disable-multilib --disable-nls --disable-werror $GLIBC_CONFIGURE_EXTRA $COMMON_CONFIG
@@ -169,8 +169,8 @@ echo "LIBC_HEADERS=1" >> $CWD/env
 fi
 
 echo "=> GLIBC STARTUP FILES"
-[ -z $LIBC_CRT ] && LIBC_CRT=0
-if [ $LIBC_CRT == "0" ]; then
+[ -z "$LIBC_CRT" ] && LIBC_CRT=0
+if [ "$LIBC_CRT" = "0" ]; then
 unset LIBC_CRT
 
 make -j$JOBS csu/subdir_lib CC=gcc CXX=g++  
@@ -185,8 +185,8 @@ echo "=> LIBGCC"
 
 cd ../build-gcc
 
-[ -z $LIBGCC ] && LIBGCC=0
-if [ $LIBGCC == "0" ]; then
+[ -z "$LIBGCC" ] && LIBGCC=0
+if [ "$LIBGCC" = "0" ]; then
 unset LIBGCC
 
 make -j$JOBS all-target-libgcc
@@ -199,8 +199,8 @@ echo "=> FINISH GLIBC"
 
 cd ../build-glibc
 
-[ -z $GLIBC ] && GLIBC=0
-if [ $GLIBC == "0" ]; then
+[ -z "$GLIBC" ] && GLIBC=0
+if [ "$GLIBC" = "0" ]; then
 unset GLIBC
 make -j$JOBS CC=gcc CXX=g++
 make install DESTDIR=$INSTALL_DIR/$TARGET
@@ -211,8 +211,8 @@ fi
 echo "=> FINISH GCC"
 cd ../build-gcc
 
-[ -z $GCC ] && GCC=0
-if [ $GCC == "0" ]; then
+[ -z "$GCC" ] && GCC=0
+if [ "$GCC" = "0" ]; then
 unset GCC
 
 make -j$JOBS
